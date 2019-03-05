@@ -71,6 +71,40 @@ class ToppraTrajectory():
         jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
         #print("Parameterization time: {:} secs".format(time.time() - t0))
 
+        # Plot for debugging
+        if req.plot == True:
+            print("Parameterization time: {:} secs".format(time.time() - t0))
+            ts_sample = np.linspace(0, jnt_traj.get_duration(), 100)
+            qs_sample = jnt_traj.eval(ts_sample)
+            qds_sample = jnt_traj.evald(ts_sample)
+            qdds_sample = jnt_traj.evaldd(ts_sample)
+
+            plt.plot(ts_sample, qdds_sample)
+            plt.xlabel("Time (s)")
+            plt.ylabel("Joint acceleration (rad/s^2)")
+            plt.show()
+
+            # Compute the feasible sets and the controllable sets for viewing.
+            # Note that these steps are not necessary.
+            _, sd_vec, _ = instance.compute_parameterization(0, 0)
+            X = instance.compute_feasible_sets()
+            K = instance.compute_controllable_sets(0, 0)
+
+            X = np.sqrt(X)
+            K = np.sqrt(K)
+
+            plt.plot(X[:, 0], c='green', label="Feasible sets")
+            plt.plot(X[:, 1], c='green')
+            plt.plot(K[:, 0], '--', c='red', label="Controllable sets")
+            plt.plot(K[:, 1], '--', c='red')
+            plt.plot(sd_vec, label="Velocity profile")
+            plt.title("Path-position path-velocity plot")
+            plt.xlabel("Path position")
+            plt.ylabel("Path velocity square")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
         # Convert to JointTrajectory message
         res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
         res.success = True
