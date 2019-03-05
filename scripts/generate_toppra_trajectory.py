@@ -28,7 +28,9 @@ class ToppraTrajectory():
         rospy.spin()
 
     def generateToppraTrajectoryCallback(self, req):
+        print " "
         print "Generating TOPP-RA trajectory."
+        tstart = time.time()
         res = GenerateTrajectoryResponse()
         dof = len(req.waypoints.points[0].positions)
         n = len(req.waypoints.points)
@@ -108,6 +110,7 @@ class ToppraTrajectory():
         # Convert to JointTrajectory message
         res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
         res.success = True
+        print "Time elapsed: ", time.time()-tstart
         return res
 
     def TOPPRA2JointTrajectory(self, jnt_traj, f):
