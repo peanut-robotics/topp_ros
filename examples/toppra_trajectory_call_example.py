@@ -16,6 +16,8 @@ class RequestTrajectory():
         request_trajectory_service = rospy.ServiceProxy(
             "generate_toppra_trajectory", GenerateTrajectory)
 
+        # This is an example for UAV and output trajectory is converted 
+        # accordingly
         trajectory_pub = rospy.Publisher('multi_dof_trajectory', 
             MultiDOFJointTrajectory, queue_size=1)
         time.sleep(0.5)
@@ -26,7 +28,8 @@ class RequestTrajectory():
         y = [0, 0, 1, 1, 0]
         z = [1, 1, 1, 1, 1]
         yaw = [0, 0, 0, 0, 0]
-        # Another example. Same square defined through more points
+        # Another example. Same square defined through more points. This will
+        # overwrite the first example
         x = [0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.0]
         y = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0]
         z = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -35,17 +38,36 @@ class RequestTrajectory():
         # Create a service request which will be filled with waypoints
         request = GenerateTrajectoryRequest()
 
+        # Add waypoints in request
         waypoint = JointTrajectoryPoint()
         for i in range(0, len(x)):
+            # Positions are defined above
             waypoint.positions = [x[i], y[i], z[i], yaw[i]]
-            waypoint.velocities = [2, 2, 2, 1]
-            waypoint.accelerations = [1.25, 1.25, 1.25, 1]
+            # Also add constraints for velocity and acceleration. These
+            # constraints are added only on the first waypoint since the
+            # TOPP-RA reads them only from there.
+            if i==0:
+                waypoint.velocities = [2, 2, 2, 1]
+                waypoint.accelerations = [1.25, 1.25, 1.25, 1]
 
+            # Append all waypoints in request
             request.waypoints.points.append(copy.deepcopy(waypoint))
 
+        # Set up joint names. This step is not necessary
         request.waypoints.joint_names = ["x", "y", "z", "yaw"]
+        # Set up sampling frequency of output trajectory.
         request.sampling_frequency = 100.0
+        # If you want to plot Maximum Velocity Curve and accelerations you can
+        # send True in this field. This is intended to be used only when you
+        # have to debug something since it will block the service until plot
+        # is closed.
+        request.plot = False
+        # Request the trajectory
         response = request_trajectory_service(request)
+
+        # Response will have trajectory and bool variable success. If for some
+        # reason the trajectory was not able to be planned or the configuration
+        # was incomplete or wrong it will return False.
 
         print "Converting trajectory to multi dof"
         joint_trajectory = response.trajectory
