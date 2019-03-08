@@ -12,6 +12,15 @@ This repository provides with TOPP and TOPP-RA interface to ROS.
 ## <a name="Installation"></a> Installation
 This repository depents on following repositories: [TOPP](https://github.com/quangounet/TOPP) and [TOPP-RA](https://github.com/hungpham2511/toppra). Follow the installation instructions on these repositories prior to installation of this package.
 
+**Installing TOPP-RA**
+Installing TOPP-RA can be a litle bit tricky. Here are instructions for installing basic functionality(which is enough for usage with topp_ros package) you can type:
+```
+git clone https://github.com/hungpham2511/toppra && cd toppra/
+pip install -r requirements.txt --user
+python setup.py install --user
+```
+
+
 To use this repository simply clone it into your ROS workspace and build it.
 
 ## <a name="Running"></a> Running the planner
