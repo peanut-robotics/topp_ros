@@ -146,7 +146,7 @@ class ToppraTrajectory():
             last_point.positions.append(qs_sample[n-1,i])
             last_point.velocities.append(0.0)
             last_point.accelerations.append(0.0)
-        last_point.time_from_start = rospy.Duration.from_sec((n-1)/f)
+        last_point.time_from_start = rospy.Duration.from_sec((n)/f)
         joint_trajectory.points.append(last_point)
 
         return joint_trajectory
