@@ -24,16 +24,16 @@ class RequestTrajectory():
 
         # Example of a simple square trajectory for quadcopter. All vectors
         # must be of same length
-        x = [0, 1, 1, 0, 0]
-        y = [0, 0, 1, 1, 0]
-        z = [1, 1, 1, 1, 1]
-        yaw = [0, 0, 0, 0, 0]
+        x = [0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0]
+        y = [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0]
+        z = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         # Another example. Same square defined through more points. This will
         # overwrite the first example
-        x = [0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.0]
-        y = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0]
-        z = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        #x = [0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.0]
+        #y = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0]
+        #z = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        #yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         # Create a service request which will be filled with waypoints
         request = GenerateTrajectoryRequest()
@@ -98,6 +98,7 @@ class RequestTrajectory():
             temp_point.transforms.append(temp_transform)
             temp_point.velocities.append(temp_vel)
             temp_point.accelerations.append(temp_acc)
+            temp_point.time_from_start = joint_trajectory.points[i].time_from_start
 
             multi_dof_trajectory.points.append(temp_point)
 
