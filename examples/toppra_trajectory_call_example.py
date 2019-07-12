@@ -30,10 +30,10 @@ class RequestTrajectory():
         yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         # Another example. Same square defined through more points. This will
         # overwrite the first example
-        #x = [0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.0]
-        #y = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0]
-        #z = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        #yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        x = [0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0, 0.0, 0.0]
+        y = [0.0, 0.0, 0.0, 0.5, 1.0, 1.0, 1.0, 0.5, 0.0]
+        z = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        yaw = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         # Create a service request which will be filled with waypoints
         request = GenerateTrajectoryRequest()
