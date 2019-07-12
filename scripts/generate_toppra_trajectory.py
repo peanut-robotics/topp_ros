@@ -26,6 +26,9 @@ class ToppraTrajectory():
         self.raw_trajectory_pub = rospy.Publisher('toppra_raw_trajectory', 
             JointTrajectory, queue_size=1)
 
+        self.raw_waypoints_pub = rospy.Publisher('toppra_raw_waypoints', 
+            JointTrajectory, queue_size=1)
+
     def run(self):
         # Nothing special, just waiting for service request
         rospy.spin()
@@ -114,6 +117,7 @@ class ToppraTrajectory():
         res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
         res.success = True
         self.raw_trajectory_pub.publish(res.trajectory)
+        self.raw_waypoints_pub.publish(req.waypoints)
         print "Time elapsed: ", time.time()-tstart
         return res
 
