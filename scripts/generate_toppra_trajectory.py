@@ -13,6 +13,7 @@ import rospy
 from topp_ros.srv import GenerateTrajectory, GenerateTrajectoryResponse
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
+MIN_GRID_POINTS = 200
 
 class ToppraTrajectory():
 
@@ -70,9 +71,11 @@ class ToppraTrajectory():
         pc_vel = constraint.JointVelocityConstraint(vlim)
         pc_acc = constraint.JointAccelerationConstraint(
             alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
-
+        
         # Setup a parametrization instance
-        instance = algo.TOPPRA([pc_vel, pc_acc], path, solver_wrapper='seidel')
+        num_grid_points = np.max([MIN_GRID_POINTS, n*2])
+        gridpoints = np.linspace(0, path.duration, num_grid_points)
+        instance = algo.TOPPRA([pc_vel, pc_acc], path, solver_wrapper='seidel', gridpoints = gridpoints)
 
         # Retime the trajectory, only this step is necessary.
         t0 = time.time()
