@@ -82,6 +82,12 @@ class ToppraTrajectory():
         jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
         #print("Parameterization time: {:} secs".format(time.time() - t0))
 
+        # Check if trajectory generation was successful
+        if jnt_traj is None:
+            print("TOPPRA trajectory generation failed")
+            res.success = False
+            return res
+
         # Plot for debugging
         if req.plot == True:
             print("Parameterization time: {:} secs".format(time.time() - t0))
