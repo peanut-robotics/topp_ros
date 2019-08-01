@@ -13,6 +13,9 @@ import rospy
 from topp_ros.srv import GenerateTrajectory, GenerateTrajectoryResponse
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
+# Scipy imports 
+from scipy.interpolate import CubicSpline
+
 MIN_GRID_POINTS = 200
 
 class ToppraTrajectory():
@@ -55,7 +58,7 @@ class ToppraTrajectory():
         for i in range(0, n):
             for j in range(0, dof):
                 way_pts[i][j] = req.waypoints.points[i].positions[j]
-
+        
         # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
         # The algorithm then parametrizes the initial path.
         path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
@@ -72,10 +75,26 @@ class ToppraTrajectory():
         pc_acc = constraint.JointAccelerationConstraint(
             alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
         
+        # Time varying velocity limits 
+        # vlim_varying needs to be n by DOF
+        # vlim_varying = [
+        #                [[-1, 2], [-1, 2], [-1, 2], [-1, 2], [-1, 2], [-1, 2], [-1, 2]],
+        #                [[-2, 3], [-2, 3], [-2, 3], [-2, 3], [-2, 3], [-2, 3], [-2, 3]],
+        #                [[-1, 0], [-1, 0], [-1, 0], [-1, 0], [-1, 0], [-1, 0], [-1, 0]]
+        #                ]
+        vlim_varying = []
+        for i in range(n):
+            vlim_varying.append([])
+            for j in range(dof):
+                vlim_varying[i].append([-req.waypoints.points[0].velocities[j], req.waypoints.points[0].velocities[j]])
+        
+        vlim_spl = CubicSpline(range(n), vlim_varying)
+        pc_vel_varying = ta.constraint.JointVelocityConstraintVarying(vlim_spl)
+
         # Setup a parametrization instance
         num_grid_points = np.max([MIN_GRID_POINTS, n*2])
         gridpoints = np.linspace(0, path.duration, num_grid_points)
-        instance = algo.TOPPRA([pc_vel, pc_acc], path, solver_wrapper='seidel', gridpoints = gridpoints)
+        instance = algo.TOPPRA([pc_vel_varying, pc_acc], path, solver_wrapper='seidel', gridpoints = gridpoints)
 
         # Retime the trajectory, only this step is necessary.
         t0 = time.time()
