@@ -19,6 +19,13 @@ class StepCurve(object):
         assert len(self.x_data) == len(self.y_data)
         
     def __call__(self, x):
+        """
+        :param x: float
+        :return np.array of size dof by 2 
+
+        Data returned simulates a step function which changes value 
+        at every time defined by x_data
+        """
         if x < self.x_data[0]:
             print("Cannot sample point at x: {}".format(x))
             return None
