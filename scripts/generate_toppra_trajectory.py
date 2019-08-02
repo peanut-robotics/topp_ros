@@ -7,6 +7,7 @@ import toppra.algorithm as algo
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from StepCurve import StepCurve
 
 # Ros imports
 import rospy
@@ -88,7 +89,8 @@ class ToppraTrajectory():
             for j in range(dof):
                 vlim_varying[i].append([-req.waypoints.points[0].velocities[j], req.waypoints.points[0].velocities[j]])
         
-        vlim_spl = CubicSpline(range(n), vlim_varying)
+        #vlim_spl = CubicSpline(range(n), vlim_varying)
+        vlim_spl = StepCurve(range(n), vlim_varying)
         pc_vel_varying = ta.constraint.JointVelocityConstraintVarying(vlim_spl)
 
         # Setup a parametrization instance
