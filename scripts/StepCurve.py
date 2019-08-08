@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#! /usr/bin/env python
 """
 Class that creates a step curve 
 Designed to be used as sampling function for toppra's JointVelocityConstraintVarying class
