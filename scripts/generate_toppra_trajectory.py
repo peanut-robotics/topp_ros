@@ -87,10 +87,9 @@ class ToppraTrajectory():
         for i in range(n):
             vlim_varying.append([])
             for j in range(dof):
-                vlim_varying[i].append([-req.waypoints.points[0].velocities[j], req.waypoints.points[0].velocities[j]])
-        
-        #vlim_spl = CubicSpline(range(n), vlim_varying)
-        vlim_spl = StepCurve(range(n), vlim_varying)
+                vlim_varying[i].append([-req.waypoints.points[i].velocities[j], req.waypoints.points[i].velocities[j]])
+        vlim_spl = CubicSpline(range(n), vlim_varying)
+        #vlim_spl = StepCurve(range(n), vlim_varying)
         pc_vel_varying = ta.constraint.JointVelocityConstraintVarying(vlim_spl)
 
         # Setup a parametrization instance
