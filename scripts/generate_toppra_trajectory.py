@@ -77,45 +77,51 @@ class ToppraTrajectory():
             instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer='ParametrizeConstAccel')
 
             # Retime the trajectory, only this step is necessary.
+            print("Computing trajectory from instance")
             t0 = time.time()
             jnt_traj = instance.compute_trajectory()
+            print("Computed traj from instance")
             # jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
             #print("Parameterization time: {:} secs".format(time.time() - t0))
 
+            # Check if trajectory generation was successful
+            if jnt_traj is None:
+                print("TOPPRA trajectory generation failed")
+                res.success = False
+                return res
+
+            # Plot for debugging
+            if req.plot:
+                ts_sample = np.linspace(0, jnt_traj.duration, 100)
+                qs_sample = jnt_traj(ts_sample)
+                qds_sample = jnt_traj(ts_sample, 1)
+                qdds_sample = jnt_traj(ts_sample, 2)
+                fig, axs = plt.subplots(3, 1, sharex=True)
+                for i in range(path.dof):
+                    # plot the i-th joint trajectory
+                    axs[0].plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
+                    axs[1].plot(ts_sample, qds_sample[:, i], c="C{:d}".format(i))
+                    axs[2].plot(ts_sample, qdds_sample[:, i], c="C{:d}".format(i))
+                axs[2].set_xlabel("Time (s)")
+                axs[0].set_ylabel("Position (rad)")
+                axs[1].set_ylabel("Velocity (rad/s)")
+                axs[2].set_ylabel("Acceleration (rad/s2)")
+                plt.show()
+
+            # Convert to JointTrajectory message
+            print("Converting to joint traj")
+            res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
+            print("Converted to joint traj")
+            res.success = True
+            self.raw_trajectory_pub.publish(res.trajectory)
+            self.raw_waypoints_pub.publish(req.waypoints)
+            print "Time elapsed: ", time.time()-tstart
+            return res
+            
         except Exception as e:
             print("Failed to generate TOPPRA traj. Error {}".format(e))
-            
-        # Check if trajectory generation was successful
-        if jnt_traj is None:
-            print("TOPPRA trajectory generation failed")
             res.success = False
-            return res
-
-        # Plot for debugging
-        if True:
-            ts_sample = np.linspace(0, jnt_traj.duration, 100)
-            qs_sample = jnt_traj(ts_sample)
-            qds_sample = jnt_traj(ts_sample, 1)
-            qdds_sample = jnt_traj(ts_sample, 2)
-            fig, axs = plt.subplots(3, 1, sharex=True)
-            for i in range(path.dof):
-                # plot the i-th joint trajectory
-                axs[0].plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
-                axs[1].plot(ts_sample, qds_sample[:, i], c="C{:d}".format(i))
-                axs[2].plot(ts_sample, qdds_sample[:, i], c="C{:d}".format(i))
-            axs[2].set_xlabel("Time (s)")
-            axs[0].set_ylabel("Position (rad)")
-            axs[1].set_ylabel("Velocity (rad/s)")
-            axs[2].set_ylabel("Acceleration (rad/s2)")
-            plt.show()
-
-        # Convert to JointTrajectory message
-        res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
-        res.success = True
-        self.raw_trajectory_pub.publish(res.trajectory)
-        self.raw_waypoints_pub.publish(req.waypoints)
-        print "Time elapsed: ", time.time()-tstart
-        return res
+            return res 
 
     def TOPPRA2JointTrajectory(self, jnt_traj, f):
         # Sampling frequency is required to get the time samples correctly.
