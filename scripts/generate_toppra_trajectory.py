@@ -30,10 +30,6 @@ class ToppraTrajectory():
         self.raw_waypoints_pub = rospy.Publisher('toppra_raw_waypoints', 
             JointTrajectory, queue_size=1)
 
-    def run(self):
-        # Nothing special, just waiting for service request
-        rospy.spin()
-
     def generateToppraTrajectoryCallback(self, req):
         print " "
         print "Generating TOPP-RA trajectory."
@@ -48,40 +44,47 @@ class ToppraTrajectory():
             res.trajectory.success = False
             return res
 
-        # Generate trajectory.
-        # First set up waypoints. We know hom many will be from n and dof.
-        way_pts = np.zeros([n, dof])
-        # Next fill the waypoints with data from request.
-        for i in range(0, n):
-            for j in range(0, dof):
-                way_pts[i][j] = req.waypoints.points[i].positions[j]
+        try:
+            # Generate trajectory.
+            # First set up waypoints. We know hom many will be from n and dof.
+            way_pts = np.zeros([n, dof])
+            # Next fill the waypoints with data from request.
+            for i in range(0, n):
+                for j in range(0, dof):
+                    way_pts[i][j] = req.waypoints.points[i].positions[j]
 
-        # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
-        # The algorithm then parametrizes the initial path.
-        path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
+            # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
+            # The algorithm then parametrizes the initial path.
+            print("Calculating spine interpolation")
+            path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
 
-        # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
-        vlim_ = np.zeros([dof])
-        alim_ = np.zeros([dof])
-        for i in range(0, dof):
-            vlim_[i] = req.waypoints.points[0].velocities[i]
-            alim_[i] = req.waypoints.points[0].accelerations[i]
-        vlim = np.vstack((-vlim_, vlim_)).T
-        alim = np.vstack((-alim_, alim_)).T
-        pc_vel = constraint.JointVelocityConstraint(vlim)
-        pc_acc = constraint.JointAccelerationConstraint(
-            alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
-        
-        # Setup a parametrization instance
-        num_grid_points = np.max([MIN_GRID_POINTS, n*2])
-        gridpoints = np.linspace(0, path.duration, num_grid_points)
-        instance = algo.TOPPRA([pc_vel, pc_acc], path, solver_wrapper='seidel', gridpoints = gridpoints)
+            # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
+            vlim_ = np.zeros([dof])
+            alim_ = np.zeros([dof])
+            for i in range(0, dof):
+                vlim_[i] = req.waypoints.points[0].velocities[i]
+                alim_[i] = req.waypoints.points[0].accelerations[i]
+            vlim = np.vstack((-vlim_, vlim_)).T
+            alim = np.vstack((-alim_, alim_)).T
+            pc_vel = constraint.JointVelocityConstraint(vlim)
+            pc_acc = constraint.JointAccelerationConstraint(
+                alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
+            
+            # Setup a parametrization instance
+            num_grid_points = np.max([MIN_GRID_POINTS, n*2])
+            gridpoints = np.linspace(0, path.duration, num_grid_points)
+            print("Calling TOPPRA")
+            instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer='ParametrizeConstAccel')
 
-        # Retime the trajectory, only this step is necessary.
-        t0 = time.time()
-        jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
-        #print("Parameterization time: {:} secs".format(time.time() - t0))
+            # Retime the trajectory, only this step is necessary.
+            t0 = time.time()
+            jnt_traj = instance.compute_trajectory()
+            # jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
+            #print("Parameterization time: {:} secs".format(time.time() - t0))
 
+        except Exception as e:
+            print("Failed to generate TOPPRA traj. Error {}".format(e))
+            
         # Check if trajectory generation was successful
         if jnt_traj is None:
             print("TOPPRA trajectory generation failed")
@@ -89,37 +92,21 @@ class ToppraTrajectory():
             return res
 
         # Plot for debugging
-        if req.plot == True:
-            print("Parameterization time: {:} secs".format(time.time() - t0))
-            ts_sample = np.linspace(0, jnt_traj.get_duration(), 100)
-            qs_sample = jnt_traj.eval(ts_sample)
-            qds_sample = jnt_traj.evald(ts_sample)
-            qdds_sample = jnt_traj.evaldd(ts_sample)
-
-            plt.plot(ts_sample, qdds_sample)
-            plt.xlabel("Time (s)")
-            plt.ylabel("Joint acceleration (rad/s^2)")
-            plt.show()
-
-            # Compute the feasible sets and the controllable sets for viewing.
-            # Note that these steps are not necessary.
-            _, sd_vec, _ = instance.compute_parameterization(0, 0)
-            X = instance.compute_feasible_sets()
-            K = instance.compute_controllable_sets(0, 0)
-
-            X = np.sqrt(X)
-            K = np.sqrt(K)
-
-            plt.plot(X[:, 0], c='green', label="Feasible sets")
-            plt.plot(X[:, 1], c='green')
-            plt.plot(K[:, 0], '--', c='red', label="Controllable sets")
-            plt.plot(K[:, 1], '--', c='red')
-            plt.plot(sd_vec, label="Velocity profile")
-            plt.title("Path-position path-velocity plot")
-            plt.xlabel("Path position")
-            plt.ylabel("Path velocity square")
-            plt.legend()
-            plt.tight_layout()
+        if True:
+            ts_sample = np.linspace(0, jnt_traj.duration, 100)
+            qs_sample = jnt_traj(ts_sample)
+            qds_sample = jnt_traj(ts_sample, 1)
+            qdds_sample = jnt_traj(ts_sample, 2)
+            fig, axs = plt.subplots(3, 1, sharex=True)
+            for i in range(path.dof):
+                # plot the i-th joint trajectory
+                axs[0].plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
+                axs[1].plot(ts_sample, qds_sample[:, i], c="C{:d}".format(i))
+                axs[2].plot(ts_sample, qdds_sample[:, i], c="C{:d}".format(i))
+            axs[2].set_xlabel("Time (s)")
+            axs[0].set_ylabel("Position (rad)")
+            axs[1].set_ylabel("Velocity (rad/s)")
+            axs[2].set_ylabel("Acceleration (rad/s2)")
             plt.show()
 
         # Convert to JointTrajectory message
@@ -171,4 +158,4 @@ class ToppraTrajectory():
 if __name__ == "__main__":
     rospy.init_node("generate_toppra_trajectory")
     generator = ToppraTrajectory()
-    generator.run()
+    rospy.spin()
