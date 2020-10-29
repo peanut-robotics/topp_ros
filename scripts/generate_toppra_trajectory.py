@@ -74,7 +74,7 @@ class ToppraTrajectory():
             num_grid_points = np.max([MIN_GRID_POINTS, n*2])
             gridpoints = np.linspace(0, path.duration, num_grid_points)
             print("Calling TOPPRA")
-            instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer='ParametrizeConstAccel')
+            instance = algo.TOPPRA([pc_vel, pc_acc], path)
 
             # Retime the trajectory, only this step is necessary.
             print("Computing trajectory from instance")
