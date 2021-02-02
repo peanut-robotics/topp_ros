@@ -40,7 +40,20 @@ class ToppraTrajectory():
         # If there is not enough waypoints to generate a trajectory return false
         if (n <= 1 or dof == 0):
             rospy.logerr("You must provide at least 2 points to generate a valid trajectory.")
-            res.trajectory.success = False
+            res.success = False
+            return res
+
+        valid = False
+        p0 = req.waypoints.points[0].positions
+        for position in req.waypoints.points[1:]:
+            p1 = position.positions 
+            diff = np.array(p1) - np.array(p0)
+            if (diff > 0.0001).any():
+                valid = True 
+                break
+        if not valid:
+            rospy.logerr("All positions are identical. Cannot generate toppra trajectory")
+            res.success = False
             return res
 
         try:
@@ -54,7 +67,7 @@ class ToppraTrajectory():
 
             # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
             # The algorithm then parametrizes the initial path.
-            rospy.logdebug("Calculating spine interpolation")
+            rospy.logdebug("Calculating spline interpolation")
             path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
 
             # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
