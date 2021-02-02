@@ -31,8 +31,7 @@ class ToppraTrajectory():
             JointTrajectory, queue_size=1)
 
     def generateToppraTrajectoryCallback(self, req):
-        print " "
-        print "Generating TOPP-RA trajectory."
+        rospy.logdebug("Generating TOPP-RA trajectory")
         tstart = time.time()
         res = GenerateTrajectoryResponse()
         dof = len(req.waypoints.points[0].positions)
@@ -40,7 +39,7 @@ class ToppraTrajectory():
 
         # If there is not enough waypoints to generate a trajectory return false
         if (n <= 1 or dof == 0):
-            print "You must provide at least 2 points to generate a valid trajectory."
+            rospy.logerr("You must provide at least 2 points to generate a valid trajectory.")
             res.trajectory.success = False
             return res
 
@@ -55,7 +54,7 @@ class ToppraTrajectory():
 
             # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
             # The algorithm then parametrizes the initial path.
-            print("Calculating spine interpolation")
+            rospy.logdebug("Calculating spine interpolation")
             path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
 
             # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
@@ -73,20 +72,20 @@ class ToppraTrajectory():
             # Setup a parametrization instance
             num_grid_points = np.max([MIN_GRID_POINTS, n*2])
             gridpoints = np.linspace(0, path.duration, num_grid_points)
-            print("Calling TOPPRA")
+            rospy.logdebug("Calling TOPPRA")
             instance = algo.TOPPRA([pc_vel, pc_acc], path)
 
             # Retime the trajectory, only this step is necessary.
-            print("Computing trajectory from instance")
+            rospy.logdebug("Computing trajectory from instance")
             t0 = time.time()
             jnt_traj = instance.compute_trajectory()
-            print("Computed traj from instance")
+            rospy.logdebug("Computed traj from instance")
             # jnt_traj, aux_traj = instance.compute_trajectory(0, 0)
             #print("Parameterization time: {:} secs".format(time.time() - t0))
 
             # Check if trajectory generation was successful
             if jnt_traj is None:
-                print("TOPPRA trajectory generation failed")
+                rospy.logerr("TOPPRA trajectory generation failed")
                 res.success = False
                 return res
 
@@ -109,17 +108,15 @@ class ToppraTrajectory():
                 plt.show()
 
             # Convert to JointTrajectory message
-            print("Converting to joint traj")
             res.trajectory = self.TOPPRA2JointTrajectory(jnt_traj, req.sampling_frequency)
-            print("Converted to joint traj")
             res.success = True
             self.raw_trajectory_pub.publish(res.trajectory)
             self.raw_waypoints_pub.publish(req.waypoints)
-            print "Time elapsed: ", time.time()-tstart
+            rospy.logdebug("Time elapsed: {}".format(time.time()-tstart))
             return res
             
         except Exception as e:
-            print("Failed to generate TOPPRA traj. Error {}".format(e))
+            rospy.logderr("Failed to generate TOPPRA traj. Error {}".format(e))
             res.success = False
             return res 
 
