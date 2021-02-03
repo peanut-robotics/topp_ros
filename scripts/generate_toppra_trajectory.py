@@ -21,18 +21,18 @@ class ToppraTrajectory():
         # Basically we have just one service waiting for request and outputting
         # trajectory
         self.generate_toppra_trajectory_service = rospy.Service(
-            'generate_toppra_trajectory', GenerateTrajectory, 
+            'generate_toppra_trajectory', GenerateTrajectory,
             self.generateToppraTrajectoryCallback)
 
-        self.raw_trajectory_pub = rospy.Publisher('toppra_raw_trajectory', 
+        self.raw_trajectory_pub = rospy.Publisher('toppra_raw_trajectory',
             JointTrajectory, queue_size=1)
 
-        self.raw_waypoints_pub = rospy.Publisher('toppra_raw_waypoints', 
+        self.raw_waypoints_pub = rospy.Publisher('toppra_raw_waypoints',
             JointTrajectory, queue_size=1)
 
     def generateToppraTrajectoryCallback(self, req):
-        print " "
-        print "Generating TOPP-RA trajectory."
+        print(" ")
+        print("Generating TOPP-RA trajectory.")
         tstart = time.time()
         res = GenerateTrajectoryResponse()
         dof = len(req.waypoints.points[0].positions)
@@ -40,7 +40,7 @@ class ToppraTrajectory():
 
         # If there is not enough waypoints to generate a trajectory return false
         if (n <= 1 or dof == 0):
-            print "You must provide at least 2 points to generate a valid trajectory."
+            print("You must provide at least 2 points to generate a valid trajectory.")
             res.trajectory.success = False
             return res
 
@@ -69,7 +69,7 @@ class ToppraTrajectory():
             pc_vel = constraint.JointVelocityConstraint(vlim)
             pc_acc = constraint.JointAccelerationConstraint(
                 alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
-            
+
             # Setup a parametrization instance
             num_grid_points = np.max([MIN_GRID_POINTS, n*2])
             gridpoints = np.linspace(0, path.duration, num_grid_points)
@@ -115,20 +115,20 @@ class ToppraTrajectory():
             res.success = True
             self.raw_trajectory_pub.publish(res.trajectory)
             self.raw_waypoints_pub.publish(req.waypoints)
-            print "Time elapsed: ", time.time()-tstart
+            print("Time elapsed: {}".format(time.time()-tstart))
             return res
-            
+
         except Exception as e:
             print("Failed to generate TOPPRA traj. Error {}".format(e))
             res.success = False
-            return res 
+            return res
 
     def TOPPRA2JointTrajectory(self, jnt_traj, f):
         # Sampling frequency is required to get the time samples correctly.
         # The number of points in ts_sample is duration*frequency.
-        ts_sample = np.linspace(0, jnt_traj.get_duration(), 
+        ts_sample = np.linspace(0, jnt_traj.get_duration(),
             int(jnt_traj.get_duration()*f))
-        # Sampling. This returns a matrix for all DOFs. Accessing specific one is 
+        # Sampling. This returns a matrix for all DOFs. Accessing specific one is
         # simple: qs_sample[:, 0]
         qs_sample = jnt_traj.eval(ts_sample)
         qds_sample = jnt_traj.evald(ts_sample)
