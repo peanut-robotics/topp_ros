@@ -48,7 +48,7 @@ class ToppraTrajectory():
         for position in req.waypoints.points[1:]:
             p1 = position.positions 
             diff = np.array(p1) - np.array(p0)
-            if (diff > 0.0001).any():
+            if (abs(diff) > 0.0001).any():
                 valid = True 
                 break
         if not valid:
