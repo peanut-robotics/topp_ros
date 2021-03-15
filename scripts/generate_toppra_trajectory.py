@@ -54,7 +54,7 @@ class ToppraTrajectory():
             # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
             # The algorithm then parametrizes the initial path.
             print("Calculating spine interpolation")
-            path = ta.UnivariateSplineInterpolator(np.linspace(0, 1, n), way_pts, w_scale=float(req.spline_smoothing_error))
+            path = ta.UnivariateSplineInterpolator(np.linspace(0, 1, n), way_pts, w_scale=float(req.spline_smoothing_factor))
 
             # Plot spline and input data comparison 
             if req.plot:

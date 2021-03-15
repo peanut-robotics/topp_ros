@@ -1,6 +1,6 @@
 trajectory_msgs/JointTrajectory     waypoints
 float64                             sampling_frequency
-float64                             spline_smoothing_error
+float64                             spline_smoothing_factor
 bool                                plot
 ---
 trajectory_msgs/JointTrajectory     trajectory
