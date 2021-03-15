@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   roslib)
 
+catkin_python_setup()
+
 add_service_files(
   FILES
   GenerateTrajectory.srv

@@ -7,6 +7,7 @@ import toppra.algorithm as algo
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from plot_helper.plot_helper import PlotHelper 
 
 # Ros imports
 import rospy
@@ -59,14 +60,8 @@ class ToppraTrajectory():
             # Plot spline and input data comparison 
             if req.plot:
                 x = np.linspace(0, 1, n)
-                spline = path(x)
-                fig, axs = plt.subplots(dof)
-                for i in range(dof):
-                    axs[i].scatter(x, way_pts[:, i], s=0.7, marker='.', color='firebrick', label='Desired points')
-                    axs[i].plot(x, spline[:,i], markerfacecolor='b', lw=2.5, alpha=0.5, label='Spline')
-                    axs[i].legend(loc="upper right")
-                plt.show()
-    
+                PlotHelper.compare_spline(path(x), way_pts, req.spline_smoothing_factor)
+
             # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
             vlim_ = np.zeros([dof])
             alim_ = np.zeros([dof])
@@ -97,21 +92,7 @@ class ToppraTrajectory():
 
             # Plot for debugging
             if req.plot:
-                ts_sample = np.linspace(0, jnt_traj.duration, 100)
-                qs_sample = jnt_traj(ts_sample)
-                qds_sample = jnt_traj(ts_sample, 1)
-                qdds_sample = jnt_traj(ts_sample, 2)
-                fig, axs = plt.subplots(3, 1, sharex=True)
-                for i in range(path.dof):
-                    # plot the i-th joint trajectory
-                    axs[0].plot(ts_sample, qs_sample[:, i], c="C{:d}".format(i))
-                    axs[1].plot(ts_sample, qds_sample[:, i], c="C{:d}".format(i))
-                    axs[2].plot(ts_sample, qdds_sample[:, i], c="C{:d}".format(i))
-                axs[2].set_xlabel("Time (s)")
-                axs[0].set_ylabel("Position (rad)")
-                axs[1].set_ylabel("Velocity (rad/s)")
-                axs[2].set_ylabel("Acceleration (rad/s2)")
-                plt.show()
+                PlotHelper.plot_trajectory(jnt_traj, path.dof)
 
             # Convert to JointTrajectory message
             print("Converting to joint traj")
