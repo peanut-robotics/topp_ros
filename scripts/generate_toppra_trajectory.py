@@ -13,8 +13,6 @@ import rospy
 from topp_ros.srv import GenerateTrajectory, GenerateTrajectoryResponse
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-MIN_GRID_POINTS = 200
-
 class ToppraTrajectory():
 
     def __init__(self):
@@ -41,7 +39,7 @@ class ToppraTrajectory():
         # If there is not enough waypoints to generate a trajectory return false
         if (n <= 1 or dof == 0):
             print("You must provide at least 2 points to generate a valid trajectory.")
-            res.trajectory.success = False
+            res.success = False
             return res
 
         try:
@@ -56,8 +54,19 @@ class ToppraTrajectory():
             # Part of TOPP-RA is to generate path(s \in [0,1]) from n waypoints.
             # The algorithm then parametrizes the initial path.
             print("Calculating spine interpolation")
-            path = ta.SplineInterpolator(np.linspace(0, 1, n), way_pts)
+            path = ta.UnivariateSplineInterpolator(np.linspace(0, 1, n), way_pts, w_scale=float(req.spline_smoothing_error))
 
+            # Plot spline and input data comparison 
+            if req.plot:
+                x = np.linspace(0, 1, n)
+                spline = path(x)
+                fig, axs = plt.subplots(dof)
+                for i in range(dof):
+                    axs[i].scatter(x, way_pts[:, i], s=0.7, marker='.', color='firebrick', label='Desired points')
+                    axs[i].plot(x, spline[:,i], markerfacecolor='b', lw=2.5, alpha=0.5, label='Spline')
+                    axs[i].legend(loc="upper right")
+                plt.show()
+    
             # Create velocity and acceleration bounds. Supposing symmetrical bounds around zero.
             vlim_ = np.zeros([dof])
             alim_ = np.zeros([dof])
@@ -69,10 +78,6 @@ class ToppraTrajectory():
             pc_vel = constraint.JointVelocityConstraint(vlim)
             pc_acc = constraint.JointAccelerationConstraint(
                 alim, discretization_scheme=constraint.DiscretizationType.Interpolation)
-
-            # Setup a parametrization instance
-            num_grid_points = np.max([MIN_GRID_POINTS, n*2])
-            gridpoints = np.linspace(0, path.duration, num_grid_points)
             print("Calling TOPPRA")
             instance = algo.TOPPRA([pc_vel, pc_acc], path)
 
